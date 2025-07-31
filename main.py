@@ -21,11 +21,56 @@ root.update_idletasks()
 root.minsize(400, 600)
 root.maxsize(400, 600)
 
-
 # BACKGROUND IMAGE
 bg_image = Image.open("assets/backgrounds/background_inspo_1.jpg").resize((400, 600), Image.LANCZOS)
 bg_photo = ImageTk.PhotoImage(bg_image)
 tk.Label(root, image=bg_photo).place(x=0, y=0, relwidth=1, relheight=1)
+
+# SCANLINES OVERLAY SYSTEM
+scanlines_overlay = None
+scanlines_active = False
+
+def create_scanlines_overlay():
+    """Create the CRT scanlines overlay effect"""
+    scanlines_canvas = tk.Canvas(root, width=400, height=600, 
+                                highlightthickness=0, bd=0)
+    scanlines_canvas.place(x=0, y=0)
+    
+    # Draw horizontal scan lines every 3 pixels for authentic CRT look
+    for y in range(0, 600, 3):
+        scanlines_canvas.create_line(0, y, 400, y, 
+                                   fill="#000000", 
+                                   stipple="gray25",  # Creates semi-transparent effect
+                                   width=1)
+    
+    # Add some subtle vertical lines for extra CRT texture
+    for x in range(0, 400, 120):
+        scanlines_canvas.create_line(x, 0, x, 600, 
+                                   fill="#000000", 
+                                   stipple="gray12", 
+                                   width=1)
+    
+    # Make canvas non-interactive so clicks pass through
+    scanlines_canvas.configure(state='disabled')
+    
+    return scanlines_canvas
+
+def toggle_static_effect():
+    """Toggle the CRT static/scanlines effect on and off"""
+    global scanlines_overlay, scanlines_active
+    
+    if not scanlines_active:
+        # Create scan lines
+        scanlines_overlay = create_scanlines_overlay()
+        scanlines_active = True
+        print("📺 Static effect ON")
+    else:
+        # Remove scan lines
+        if scanlines_overlay:
+            scanlines_overlay.destroy()
+            scanlines_overlay = None
+        scanlines_active = False
+        print("📺 Static effect OFF")
 
 # HEADER
 header_frame = tk.Frame(root, bg="#ffcde1", height=5)
@@ -68,7 +113,10 @@ def search_city_weather():
 search_button = tk.Button(location_frame, text=" Search ", font=("Courier", 10), bg="#ffaad4", fg="#fff", bd=2, command=search_city_weather)
 search_button.pack(side="left", padx=5)
 
-clear_button = tk.Button(location_frame, text=" X ", font=("Courier", 10), bg="#ffaad4", fg="#fff", bd=2)
+def clear_search():
+    location_entry.delete(0, tk.END)
+
+clear_button = tk.Button(location_frame, text=" X ", font=("Courier", 10), bg="#ffaad4", fg="#fff", bd=2, command=clear_search)
 clear_button.pack(side="left", padx=5)
 
 # STYLES
@@ -204,7 +252,7 @@ tk.Button(toolbar_frame, text="⏮", command=previous_slide, **toolbar_button_st
 tk.Button(toolbar_frame, text="▶", command=play_slideshow, **toolbar_button_style).pack(side="left", padx=2)
 tk.Button(toolbar_frame, text="⏸", command=lambda: print("Pause clicked (coming soon)"), **toolbar_button_style).pack(side="left", padx=2)
 tk.Button(toolbar_frame, text="🔊", command=lambda: print("Audio toggle (coming soon)"), **toolbar_button_style).pack(side="left", padx=2)
-tk.Button(toolbar_frame, text="📺", command=lambda: print("Static effect (coming soon)"), **toolbar_button_style).pack(side="left", padx=2)
+tk.Button(toolbar_frame, text="📺", command=toggle_static_effect, **toolbar_button_style).pack(side="left", padx=2)
 tk.Button(toolbar_frame, text="⏭", command=next_slide, **toolbar_button_style).pack(side="left", padx=2)
 
 # Time + Launch
