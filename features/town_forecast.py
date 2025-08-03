@@ -6,6 +6,7 @@ from features.weather_api import get_forecast
 SUN_ICON = None
 RAIN_ICON = None
 CLOUD_ICON = None
+PIG_ICON = None  # 🐷 added pig icon
 
 # Emoji fallback (for undefined types)
 WEATHER_EMOJIS = {
@@ -16,7 +17,7 @@ WEATHER_EMOJIS = {
 }
 
 def create_town_forecast_frame(parent):
-    global SUN_ICON, RAIN_ICON, CLOUD_ICON
+    global SUN_ICON, RAIN_ICON, CLOUD_ICON, PIG_ICON
 
     # Load icons now that root exists
     if SUN_ICON is None:
@@ -25,6 +26,8 @@ def create_town_forecast_frame(parent):
         RAIN_ICON = ImageTk.PhotoImage(Image.open("assets/icons/kawaii_rain_64px.png").resize((48, 48), Image.LANCZOS))
     if CLOUD_ICON is None:
         CLOUD_ICON = ImageTk.PhotoImage(Image.open("assets/icons/kawaii_cloud_64px.png").resize((48, 48), Image.LANCZOS))
+    if PIG_ICON is None:
+        PIG_ICON = ImageTk.PhotoImage(Image.open("assets/icons/flying_pig_header_96px.png").resize((80, 80), Image.LANCZOS))
 
     frame = tk.Frame(parent, width=360, height=450, bg="#ffeaf5")
     frame.pack_propagate(False)
@@ -58,9 +61,10 @@ def create_town_forecast_frame(parent):
 
         blocks.append((day_label, icon_label))
 
-    # Moon Friend
-    moon = tk.Label(frame, text="(｡♥‿♥｡)", font=("Courier", 20), bg="#ffeaf5")
-    moon.pack(pady=(15, 5))
+    # 🐷 Pig Friend (was Moon Friend)
+    pig = tk.Label(frame, image=PIG_ICON, bg="#ffeaf5", bd=0)
+    pig.image = PIG_ICON
+    pig.pack(pady=(15, 5))
 
     moon_msg = tk.Label(frame, text="See you soon!", font=("Courier", 10), bg="#ffeaf5", fg="#5f5f5f")
     moon_msg.pack()

@@ -1,72 +1,72 @@
+# features/almanac.py
+
 import tkinter as tk
-from PIL import Image, ImageTk
-import os
+from tkinter import ttk
+import pandas as pd
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
-class AlmanacFrame(tk.Frame):
-    def __init__(self, parent, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-        self.configure(bg="#ffeaf5")
+# Load combined team CSV
+TEAM_DATA = pd.read_csv("assets/data/team_weather_data.csv")  # Adjust path if needed
 
-        moon_phase_name = "Waxing Gibbous"
-        moon_emoji = "🌔"
+# Group by city for faster access
+CITY_DATA = {city: df for city, df in TEAM_DATA.groupby("city")}
 
-        tk.Label(self, text="★ Almanac ★", font=("Press Start 2P", 14), bg="#ffeaf5", fg="#ff69b4").pack(pady=(10, 5))
+def create_almanac_frame(parent):
+    frame = tk.Frame(parent, bg="#ffeaf5", width=360, height=450)
+    frame.pack_propagate(False)
 
-        # Sparkles
-        self.sparkle_label = tk.Label(self, text="", font=("Arial", 14), bg="#ffeaf5", fg="#ffb3da")
-        self.sparkle_label.pack()
+    title = tk.Label(frame, text="★ Almanac ★", font=("Press Start 2P", 12), bg="#ffeaf5", fg="#ff69b4")
+    title.pack(pady=(10, 5))
 
-        # Moon phase chart
-        tk.Label(self, text="🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘", font=("Arial", 18), bg="#ffeaf5").pack(pady=(20, 5))
-        tk.Label(self, text=f"Today’s phase: {moon_emoji} {moon_phase_name}", font=("Arial", 12, "bold"), bg="#ffeaf5", fg="#333").pack()
+    # City buttons container
+    button_frame = tk.Frame(frame, bg="#ffeaf5")
+    button_frame.pack(side="left", padx=(10, 5), pady=10)
 
-        # Banner
-        try:
-            banner_path = os.path.join("assets", "almanac.png")
-            moon_banner = Image.open(banner_path)
-            moon_banner.thumbnail((280, 100), Image.LANCZOS)
-            self.banner_img = ImageTk.PhotoImage(moon_banner)
-            tk.Label(self, image=self.banner_img, bg="#ffeaf5").pack(pady=(20, 5))
-        except:
-            tk.Label(self, text="(Moon banner missing)", bg="#ffeaf5").pack()
+    # Graph display area
+    graph_container = tk.Frame(frame, bg="#ffeaf5")
+    graph_container.pack(side="right", padx=(5, 10), pady=10)
 
-        # Cute footer
-        tk.Label(self, text="✧ ✦ Stay lunar ✦ ✧", font=("Arial", 11), bg="#ffeaf5", fg="#999").pack(pady=(10, 2))
+    canvas_holder = {}
 
-        # Moon friend character
-        try:
-            friend_path = os.path.join("assets", "its_just_a_phase.png")
-            friend_img = Image.open(friend_path).resize((70, 70), Image.LANCZOS)
-            self.friend_img = ImageTk.PhotoImage(friend_img)
-            self.friend = tk.Label(self, image=self.friend_img, bg="#ffeaf5", bd=0)
-            self.friend.place(x=200, y=312)  # adjust x/y if needed
-        except Exception as e:
-            print("🚫 Moon friend failed to load:", e)
-            self.friend = None
+    def plot_city_graph(city):
+        # Clear previous canvas if any
+        if "canvas" in canvas_holder:
+            canvas_holder["canvas"].get_tk_widget().destroy()
 
-        self.has_animated = False
-        self.jump_up = True
-        self.sparkles = ["✦", "✧", "✦", "✧", "✦"]
-        self.sparkle_index = 0
+        df = CITY_DATA[city]
+        dates = pd.to_datetime(df["date"])
+        max_temps = df["max_temp"]
+        min_temps = df["min_temp"]
 
-    def on_show(self):
-        if not self.has_animated:
-            self.has_animated = True
-            self.animate_sparkles()
-            self.animate_friend()
 
-    def animate_sparkles(self):
-        if self.sparkle_index <= len(self.sparkles):
-            sparkle_text = " ".join(self.sparkles[:self.sparkle_index])
-            self.sparkle_label.config(text=sparkle_text)
-            self.sparkle_index += 1
-            self.after(300, self.animate_sparkles)
+        fig, ax = plt.subplots(figsize=(3.5, 3), dpi=100)
 
-    def animate_friend(self):
-        if self.friend:
-            x = self.friend.winfo_x()
-            y = self.friend.winfo_y()
-            new_y = y - 3 if self.jump_up else y + 3
-            self.friend.place(x=x, y=new_y)
-            self.jump_up = not self.jump_up
-            self.after(300, self.animate_friend)
+        # Plot lines
+        ax.plot(dates, max_temps, label="Max Temp", color="#ff69b4", linewidth=1.5)
+        ax.plot(dates, min_temps, label="Min Temp", color="#a39dff", linewidth=1.5)
+
+        # Clean title and labels
+        ax.set_title(f"{city} Temps (2024)", fontsize=9)
+        ax.set_ylabel("Temperature (°C)", fontsize=5)
+
+        # Clean ticks
+        ax.tick_params(axis='x', labelrotation=45, labelsize=7)
+        ax.tick_params(axis='y', labelsize=7)
+
+        # Format Y-axis numbers (no decimals unless needed)
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.1f}".rstrip('0').rstrip('.')))
+
+        # Legend
+        ax.legend(fontsize=8, loc="upper right")
+
+        canvas = FigureCanvasTkAgg(fig, master=graph_container)
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+        canvas_holder["canvas"] = canvas
+
+    # Create buttons for each city
+    for city in CITY_DATA:
+        ttk.Button(button_frame, text=city, command=lambda c=city: plot_city_graph(c)).pack(pady=3)
+
+    return frame

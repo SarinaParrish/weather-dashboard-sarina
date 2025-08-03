@@ -36,15 +36,27 @@ def create_current_conditions_frame(parent):
 
     return frame
 
-def get_emoji(condition):
-    condition = condition.lower()
-    if "cloud" in condition: return "☁️"
-    if "rain" in condition: return "🌧️"
-    if "sun" in condition or "clear" in condition: return "☀️"
-    if "snow" in condition: return "❄️"
-    return "🌈"
-
 def update_current_conditions(frame, data):
     if not data:
-        frame.location_label.config(text="⚠️ Unable to load weather")
+        frame.location_label.config(text="⚠️ Weather Unavailable")
         return
+
+    try:
+        city = data.get("name", "Unknown")
+        temp = round(data["main"]["temp"])
+        condition = data["weather"][0]["main"]
+        high = round(data["main"]["temp_max"])
+        low = round(data["main"]["temp_min"])
+        humidity = data["main"]["humidity"]
+        wind = round(data["wind"]["speed"])
+
+        frame.location_label.config(text=f"📍 {city}")
+        frame.temp_label.config(text=f"{temp}°F")
+        frame.condition_label.config(text=f"{condition}")
+        frame.high_low_label.config(text=f"H: {high}°F  L: {low}°F")
+        frame.humidity_label.config(text=f"💧 Humidity: {humidity}%")
+        frame.wind_label.config(text=f"🌬️ Wind: {wind} mph")
+
+    except Exception as e:
+        print("❌ Failed to update current conditions:", e)
+        frame.location_label.config(text="⚠️ Error loading weather")

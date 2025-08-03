@@ -9,28 +9,37 @@ from collections import defaultdict
 
 def get_forecast(city):
     url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=imperial"
-
     try:
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
         forecasts = data.get("list", [])
 
-        # Group forecasts by day
+        from collections import defaultdict
+        from datetime import datetime
+
         daily = defaultdict(list)
         for entry in forecasts:
             dt = datetime.fromtimestamp(entry["dt"])
-            day_str = dt.strftime("%a")  # e.g., 'Mon'
+            day_str = dt.strftime("%a")  # "Mon", "Tue", etc.
             main = entry["weather"][0]["main"]
-            daily[day_str].append(main)
+            desc = entry["weather"][0]["description"]
+            temp = entry["main"]["temp"]
+            daily[day_str].append((main, desc, temp))
 
-        # Reduce to top 3 days
         result = []
-        for i, (day, conditions) in enumerate(daily.items()):
-            # Get most common weather condition for the day
+        for i, (day, entries) in enumerate(daily.items()):
+            conditions, descriptions, temps = zip(*entries)
             main_condition = max(set(conditions), key=conditions.count)
-            result.append({"day": day, "main": main_condition})
-            if len(result) == 3:
+            desc_summary = max(set(descriptions), key=descriptions.count)
+            result.append({
+                "day": day,
+                "main": main_condition,
+                "desc": desc_summary,
+                "high": round(max(temps)),
+                "low": round(min(temps))
+            })
+            if len(result) == 5:
                 break
 
         return result
@@ -38,6 +47,7 @@ def get_forecast(city):
     except Exception as e:
         print(f"❌ Forecast API error: {e}")
         return None
+
 
 def get_user_city():
     try:
@@ -47,9 +57,10 @@ def get_user_city():
     except Exception as e:
         print("🌐 Could not get location from IP:", e)
         return "New York"
+    
+def get_weather(city, units="imperial"):
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units={units}"
 
-def get_weather(city):
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=imperial"
     try:
         response = requests.get(url)
         response.raise_for_status()
